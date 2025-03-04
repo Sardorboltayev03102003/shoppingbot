@@ -1,14 +1,16 @@
 from multiprocessing.resource_tracker import register
 
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.handlers.state import Register
+from bot.keyboard.category import keyboard_category
 from bot.keyboard.contact import contact_keyboard
-from bot.request.add_user import add_user
+from bot.keyboard.keyboards import main
+from bot.request.user import add_user, get_user
 
 router = Router(name="commands-router")
 
@@ -58,10 +60,14 @@ router = Router(name="commands-router")
 #     await message.answer(text_template.format(scores=score_entries_text), parse_mode="HTML")
 
 
-@router.message(CommandStart())
-async def start(message: Message, state: FSMContext):
-    await message.answer(text="Ro'yxatdan o'tish uchun ismingizni kiriting:")
-    await state.set_state(Register.fullname)
+@router.message(F.text == '/start')
+async def start(message: Message, state: FSMContext, session):
+    user = await get_user(message.from_user.id, session)
+    if user:
+        await message.answer(text='Botimizga xush kelibsiz!', reply_markup=main)
+    else:
+        await message.answer(text="Ro'yxatdan o'tish uchun ismingizni kiriting:")
+        await state.set_state(Register.fullname)
 
 
 @router.message(Register.fullname)
@@ -86,10 +92,7 @@ async def process_age(message: Message, state: FSMContext):
 
 
 @router.message(Register.number)
-async def process_number(message: Message, state: FSMContext, **kwargs):
-    data = kwargs.get("data",{})
-    session = data.get('session')
-    print(data)
+async def process_number(message: Message, state: FSMContext, session):
     if message.contact:
         number = message.contact.phone_number
     else:
@@ -100,6 +103,12 @@ async def process_number(message: Message, state: FSMContext, **kwargs):
     surname = user_data["surname"]
     age = user_data["age"]
 
-    await add_user(telegram_id, fullname, surname, age, number,session)
-    await message.answer("Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz!")
+    await add_user(telegram_id, fullname, surname, age, number, session)
+    await message.answer("Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz!", reply_markup=main)
     await state.clear()
+
+
+@router.message(F.text == 'Maxsulotlar')
+async def category(message: Message):
+    keyboard = await keyboard_category()
+    await message.answer(text="Maxsulotlar bo'limidan birini tanlang!", reply_markup=keyboard)

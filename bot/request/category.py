@@ -1,0 +1,14 @@
+from sqlalchemy import select
+
+from bot.__main__ import session_maker
+from bot.db.models import *
+
+
+async def get_category():
+    async with session_maker() as session:
+        return await session.scalars(select(Category))
+
+
+async def get_sap_category(category_id:int):
+    async with session_maker() as session:
+        return await session.scalars(select(SapCategory).where(SapCategory.category_id == category_id))

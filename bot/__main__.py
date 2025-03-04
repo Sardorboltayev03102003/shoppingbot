@@ -15,6 +15,8 @@ engine = create_async_engine(url=config.db_url, echo=True)
 session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 
+
+
 async def main():
     bot = Bot(config.bot_token.get_secret_value(), default=DefaultBotProperties(parse_mode="HTML"))
 

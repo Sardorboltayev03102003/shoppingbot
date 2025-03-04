@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.common import BallsCallbackFactory
 from bot.db.models import PlayerScore
+from bot.keyboard.category import keyboard_sap_category
 from bot.keyboard.keyboards import generate_balls
 
 router = Router(name="callbacks-router")
@@ -44,3 +45,11 @@ async def cb_hit(callback: CallbackQuery, session: AsyncSession):
     # Since we have "expire_on_commit=False", we can use player instance here
     with suppress(TelegramBadRequest):
         await callback.message.edit_text(f"Your score: {player.score}", reply_markup=generate_balls())
+
+
+@router.callback_query(F.data.startswith('category_'))
+async def sap_category(callback: CallbackQuery):
+    await callback.answer(text="Maxsulotlardan birini tanlang!")
+    category_id = int(callback.data.split('_')[1])
+    message_text, reply_markup = await keyboard_sap_category(category_id)
+    await callback.message.answer(text=message_text, reply_markup=reply_markup)

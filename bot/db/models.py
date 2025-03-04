@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from bot.db.base import Base
 
+
 class PlayerScore(Base):
     __tablename__ = "playerscore"
 
