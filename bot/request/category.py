@@ -9,6 +9,13 @@ async def get_category():
         return await session.scalars(select(Category))
 
 
-async def get_sap_category(category_id:int):
+async def get_sap_category(category_id: int):
     async with session_maker() as session:
         return await session.scalars(select(SapCategory).where(SapCategory.category_id == category_id))
+
+
+async def get_sap_category_item(sap_category_id: int):
+    async with session_maker() as session:
+        stmt = select(SapCategory).where(SapCategory.id == sap_category_id).limit(1)
+        res = await session.execute(stmt)
+        return res.scalar_one_or_none()

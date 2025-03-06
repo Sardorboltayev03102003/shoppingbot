@@ -1,10 +1,7 @@
 from random import randint
-
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-
-
 from bot.common import BallsCallbackFactory
 
 

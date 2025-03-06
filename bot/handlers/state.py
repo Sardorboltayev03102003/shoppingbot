@@ -6,3 +6,6 @@ class Register(StatesGroup):
     surname = State()
     age = State()
     number = State()
+
+class CartState(StatesGroup):
+    waiting_for = State()

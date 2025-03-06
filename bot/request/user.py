@@ -9,7 +9,6 @@ async def add_user(telegram_id: int, fullname: str, surname: str, age: int, numb
     session.add(user)
     await session.commit()
 
-
 async def get_user(telegram_id: int, session: AsyncSession):
-    result = await session.execute(select(User).filter_by(telegram_id=telegram_id))
+    result = await session.execute(select(User).where(User.telegram_id == telegram_id))
     return result.scalars().first()

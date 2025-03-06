@@ -21,6 +21,7 @@ class User(Base):
     number: Mapped[str] = mapped_column(String, nullable=True)
 
 
+
 class Category(Base):
     __tablename__ = 'category'
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

@@ -7,6 +7,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.handlers.state import Register
+from bot.keyboard.basket import cart_keyboard
 from bot.keyboard.category import keyboard_category
 from bot.keyboard.contact import contact_keyboard
 from bot.keyboard.keyboards import main
@@ -61,7 +62,7 @@ router = Router(name="commands-router")
 
 
 @router.message(F.text == '/start')
-async def start(message: Message, state: FSMContext, session):
+async def start(message: Message, state: FSMContext, session: AsyncSession):
     user = await get_user(message.from_user.id, session)
     if user:
         await message.answer(text='Botimizga xush kelibsiz!', reply_markup=main)
@@ -112,3 +113,29 @@ async def process_number(message: Message, state: FSMContext, session):
 async def category(message: Message):
     keyboard = await keyboard_category()
     await message.answer(text="Maxsulotlar bo'limidan birini tanlang!", reply_markup=keyboard)
+
+
+@router.message(F.text.lower() == 'savatcha')
+async def show_cart(message: Message, state: FSMContext):
+    cart = await state.get_data()
+    total_amount = 0
+    message_text = "🛒 <b>Savatchada:</b>\n"
+
+
+    if not cart.get('cart_items'):
+        await message.answer("🛒 Savatingiz bo'sh!")
+        return
+
+    all_sap_category = cart['cart_items']
+    reply_markup = await cart_keyboard(all_sap_category)
+
+    for item in all_sap_category:
+        item_name = item["name"]
+        item_price = item["price"]
+        quantity = item["quantity"]
+        total_amount += item_price * quantity
+        message_text += f"📦 <b>{item_name}</b>\n🔢 Miqdor: {quantity} ta | 💰 {item_price} so‘m\n\n"
+
+    message_text += f"🧾 <b>Jami narx:</b> {total_amount} so‘m"
+    await message.answer(message_text, parse_mode="HTML", reply_markup=reply_markup)
+
