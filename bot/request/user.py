@@ -12,3 +12,9 @@ async def add_user(telegram_id: int, fullname: str, surname: str, age: int, numb
 async def get_user(telegram_id: int, session: AsyncSession):
     result = await session.execute(select(User).where(User.telegram_id == telegram_id))
     return result.scalars().first()
+
+
+async def get_user_id(telegram_id:int,session: AsyncSession):
+    res = await session.execute(select(User.id).where(User.telegram_id==telegram_id))
+    user_id = res.scalar()
+    return user_id

@@ -1,8 +1,8 @@
 aiofiles
-aiogram
+aiogram~=3.18.0
 aiohttp
 aiosignal
-alembic
+alembic~=1.15.1
 async-timeout
 attrs
 certifi
@@ -17,10 +17,13 @@ multidict
 psycopg
 psycopg-binary
 psycopg-pool
-pydantic
+pydantic~=2.10.6
 python-dotenv
-SQLAlchemy
+SQLAlchemy~=2.0.38
 typing_extensions
 yarl
-pydantic-settings
+pydantic-settings~=2.8.1
+geopy
 
+Django~=5.1.6
+pillow~=11.1.0

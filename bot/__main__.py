@@ -6,7 +6,7 @@ from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from bot.config_reader import config
-from bot.handlers import commands, callbacks
+from bot.handlers import commands, callbacks,location
 from bot.middlewares import DbSessionMiddleware
 from bot.ui_commands import set_ui_commands
 from bot.config_reader import config
@@ -30,6 +30,7 @@ async def main():
     # Register handlers
     dp.include_router(commands.router)
     dp.include_router(callbacks.router)
+    dp.include_router(location.router)
 
     # Set bot commands in UI
     await set_ui_commands(bot)

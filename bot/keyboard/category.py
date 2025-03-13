@@ -2,7 +2,7 @@
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot.request.category import get_category, get_sap_category, get_sap_category_item
+from bot.request.category import get_category, get_sap_category, get_sap_category_item, get_category_details
 
 
 async def keyboard_category():
@@ -19,8 +19,12 @@ async def keyboard_category():
 
 async def keyboard_sap_category(category_id):
     all_sap_category = await get_sap_category(category_id)
+    category = await get_category_details(category_id)
     keyboard = InlineKeyboardBuilder()
     all_sap_category = list(all_sap_category)
+
+    category_image = category.image if category else None
+
     if not all_sap_category:
         message_text = "Bu categoriyada maxsulot mavjud emas"
     else:
@@ -31,11 +35,12 @@ async def keyboard_sap_category(category_id):
             )
     keyboard.row(InlineKeyboardButton(text="Ortga", callback_data="back_category"))
     reply_markup = keyboard.adjust(2).as_markup()
-    return message_text, reply_markup
+    return message_text, reply_markup, category_image
 
 
 async def keyboard_sap_category_item(sap_category_id: int, quantity: int = 1):
     sap_category = await get_sap_category_item(sap_category_id)
+    sap_category_image = sap_category.image if sap_category else None
     keyboard = InlineKeyboardBuilder()
     message_text = (
         f"🛍 <b>{sap_category.name}</b>\n"
@@ -55,4 +60,4 @@ async def keyboard_sap_category_item(sap_category_id: int, quantity: int = 1):
     )
 
     reply_markup = keyboard.as_markup()
-    return message_text,reply_markup
+    return message_text,reply_markup,sap_category_image

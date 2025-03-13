@@ -1,7 +1,4 @@
-from multiprocessing.resource_tracker import register
-
 from aiogram import Router, F
-from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession

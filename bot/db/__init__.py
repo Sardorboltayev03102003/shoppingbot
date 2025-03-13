@@ -1,7 +1,11 @@
 from .base import Base
-from .models import PlayerScore
+from .models import PlayerScore,User,Category,SapCategory,Location
 
 __all__ = [
     "Base",
-    "PlayerScore"
+    "PlayerScore",
+    "User",
+    "Category",
+    "SapCategory",
+    "Location"
 ]

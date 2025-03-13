@@ -20,12 +20,15 @@ class User(Base):
     age: Mapped[int] = mapped_column(Integer, nullable=False)
     number: Mapped[str] = mapped_column(String, nullable=True)
 
+    location = relationship("Location",back_populates="user")
+
 
 
 class Category(Base):
     __tablename__ = 'category'
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String, nullable=True)
+    image: Mapped[str] = mapped_column(Text,nullable=True)
 
     sap_category = relationship("SapCategory", back_populates="category")
 
@@ -40,3 +43,13 @@ class SapCategory(Base):
     category_id: Mapped[int] = mapped_column(Integer, ForeignKey(Category.id, ondelete="CASCADE"))
 
     category = relationship("Category", back_populates="sap_category")
+
+class Location(Base):
+    __tablename__ = 'location'
+    id: Mapped[int] = mapped_column(Integer,primary_key=True,autoincrement=True)
+    address: Mapped[str] = mapped_column(String,nullable=True)
+    longitude: Mapped[int] = mapped_column(Double,nullable=True)
+    latitude: Mapped[int] = mapped_column(Double,nullable=True)
+    user_id: Mapped[int] = mapped_column(BigInteger,ForeignKey(User.id, ondelete = "CASCADE"))
+
+    user = relationship("User",back_populates="location")

@@ -1,12 +1,13 @@
 from contextlib import suppress
 
 from aiogram import Router, F
+from aiogram.client import bot
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InputFile, FSInputFile, InputMediaPhoto
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.fsm.context import FSMContext
-from sqlalchemy.util import await_only
+from PIL import Image
 
 from bot.common import BallsCallbackFactory
 from bot.db.models import PlayerScore, User, SapCategory
@@ -43,7 +44,6 @@ async def cb_hit(callback: CallbackQuery, session: AsyncSession):
     player.score += 1
     await session.commit()
 
-    # Since we have "expire_on_commit=False", we can use player instance here
     with suppress(TelegramBadRequest):
         await callback.message.edit_text(f"Your score: {player.score}", reply_markup=generate_balls())
 
@@ -52,24 +52,44 @@ async def cb_hit(callback: CallbackQuery, session: AsyncSession):
 async def sap_category(callback: CallbackQuery):
     category_id = int(callback.data.split('_')[1])
     from bot.keyboard.category import keyboard_sap_category
-    message_text, reply_markup = await keyboard_sap_category(category_id)
-    await callback.message.edit_text(text=message_text, reply_markup=reply_markup)
+    message_text, reply_markup, category_image = await keyboard_sap_category(category_id)
+    image_path = f"{category_image}"
+    try:
+        with Image.open(image_path) as img:
+            img = img.resize((400, 400))
+            resized_image_path = "resized_image.png"
+            img.save(resized_image_path)
+        photo = FSInputFile(resized_image_path)
+        await callback.message.delete()
+        await callback.message.answer_photo(photo, caption=message_text, reply_markup=reply_markup)
+    except FileNotFoundError:
+        await callback.message.answer("❌ Kategoriya rasmi topilmadi!")
 
 
 @router.callback_query(F.data.startswith('sap_category_'))
 async def sap_category_item(callback: CallbackQuery):
     sap_category_id = int(callback.data.split('_')[2])
     from bot.keyboard.category import keyboard_sap_category_item
-    message_text, reply_markup = await keyboard_sap_category_item(sap_category_id)
-    await callback.message.delete()
-    await callback.message.answer(text=message_text, reply_markup=reply_markup)
+    message_text, reply_markup, sap_category_image = await keyboard_sap_category_item(sap_category_id)
+    image_path = f"{sap_category_image}"
+    resized_image_path = "resize_image.png"
+    try:
+        with Image.open(image_path) as img:
+            img = img.resize((300, 300))
+            img.save(resized_image_path)
+        photo = FSInputFile(resized_image_path)
+        await callback.message.delete()
+        await callback.message.answer_photo(photo, caption=message_text, reply_markup=reply_markup)
+    except FileNotFoundError:
+        await callback.message.answer("Maxsulot rasmi topilmadi")
 
 
 @router.callback_query(F.data.startswith('back_category'))
 async def back_category(callback: CallbackQuery):
     from bot.keyboard.category import keyboard_category
     keyboard = await keyboard_category()
-    await callback.message.edit_reply_markup(text="Maxsulotlar bo'limidan birini tanlang!", reply_markup=keyboard)
+    await callback.message.delete()
+    await callback.message.answer(text="Maxsulotlar bo'limidan birini tanlang!", reply_markup=keyboard)
 
 
 @router.callback_query(F.data.startswith('decrease_'))
@@ -78,8 +98,8 @@ async def decrease_quantity(callback: CallbackQuery):
     sap_category_id = int(parts[1])
     quantity = max(1, int(parts[2]) - 1)
     from bot.keyboard.category import keyboard_sap_category_item
-    message_text, reply_markup = await keyboard_sap_category_item(sap_category_id, quantity)
-    await callback.message.edit_text(message_text, reply_markup=reply_markup)
+    _, reply_markup, _ = await keyboard_sap_category_item(sap_category_id, quantity)
+    await callback.message.edit_reply_markup(reply_markup=reply_markup)
     await callback.answer()
 
 
@@ -89,8 +109,8 @@ async def increase_quantity(callback: CallbackQuery):
     sap_category_id = int(parts[1])
     quantity = max(1, int(parts[2]) + 1)
     from bot.keyboard.category import keyboard_sap_category_item
-    message_text, reply_markup = await keyboard_sap_category_item(sap_category_id, quantity)
-    await callback.message.edit_text(message_text, reply_markup=reply_markup)
+    _, reply_markup, _ = await keyboard_sap_category_item(sap_category_id, quantity)
+    await callback.message.edit_reply_markup(reply_markup=reply_markup)
     await callback.answer()
 
 
@@ -101,12 +121,13 @@ async def add_to_cart(call: CallbackQuery, state: FSMContext, session: AsyncSess
     new_quantity = int(data[4])
     user_id = call.from_user.id
 
-    smtp = select(SapCategory).where(SapCategory.id ==sap_category_id)
+    smtp = select(SapCategory).where(SapCategory.id == sap_category_id)
     result = await session.execute(smtp)
     product = result.scalar_one_or_none()
+    category_id = product.category_id
 
     cart_data = await state.get_data()
-    cart_items = cart_data.get("cart_items",[])
+    cart_items = cart_data.get("cart_items", [])
     found = False
     for item in cart_items:
         if item["id"] == sap_category_id:
@@ -117,11 +138,21 @@ async def add_to_cart(call: CallbackQuery, state: FSMContext, session: AsyncSess
         cart_items.append({
             "user_id": user_id,
             "id": sap_category_id,
-            "name":product.name,
-            "price":product.price,
+            "name": product.name,
+            "price": product.price,
             "quantity": new_quantity
         })
 
     await state.update_data(cart_items=cart_items)
+    await call.answer("Mahsulot savatga qo'shildi ✅")
+    from bot.keyboard.category import keyboard_sap_category
+    await call.message.delete()
+    message_text, reply_markup,category_image = await keyboard_sap_category(category_id)
+    photo = FSInputFile(category_image)
+    await call.message.answer_photo(photo,caption=message_text,reply_markup=reply_markup)
 
-    await call.answer(f"✅ {new_quantity} ta savatga qo‘shildi!")
+@router.callback_query(F.data.startswith('clear_cart'))
+async def clear_cart(call: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await call.message.delete()
+    await call.message.answer("Savat tozalandi! 🛒❌")
