@@ -85,6 +85,9 @@ async def check_location(message: Message, session: AsyncSession,state:FSMContex
             session.add(new_location)
             await session.commit()
             await session.close()
+
+
+
             await session.refresh(new_location)
             location_id = new_location.id
 
