@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, BigInteger, String, Text, Double, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, String, Text, Double, ForeignKey,Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from bot.db.base import Base
@@ -21,6 +21,7 @@ class User(Base):
     number: Mapped[str] = mapped_column(String, nullable=True)
 
     location = relationship("Location",back_populates="user")
+    order = relationship("Order",back_populates="user")
 
 
 
@@ -53,3 +54,30 @@ class Location(Base):
     user_id: Mapped[int] = mapped_column(BigInteger,ForeignKey(User.id, ondelete = "CASCADE"))
 
     user = relationship("User",back_populates="location")
+    order = relationship("Order",back_populates="location")
+
+
+
+
+class Order(Base):
+    __tablename__ = "order"
+    id: Mapped[int] = mapped_column(BigInteger,primary_key=True,autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger,ForeignKey(User.id,ondelete="CASCADE"))
+    location_id: Mapped[int] = mapped_column(Integer,ForeignKey(Location.id, ondelete="CASCADE"))
+    status: Mapped[str] = mapped_column(String,default="pending")
+
+    location = relationship("Location",back_populates="order")
+    user = relationship("User",back_populates="order")
+    order_product = relationship("OrderProduct",back_populates="order")
+
+class OrderProduct(Base):
+    __tablename__ = "order_product"
+    id: Mapped[int] = mapped_column(BigInteger,primary_key=True,autoincrement=True)
+    order_id: Mapped[int] = mapped_column(BigInteger, ForeignKey(Order.id, ondelete="CASCADE"))
+    quantity: Mapped[int] = mapped_column(Integer,nullable=True)
+    product_id: Mapped[int] = mapped_column(Integer,ForeignKey(SapCategory.id,ondelete="CASCADE"))
+    price: Mapped[int] = mapped_column(Double,nullable=True)
+
+    order = relationship("Order", back_populates="order_product")
+
+

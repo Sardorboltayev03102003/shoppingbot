@@ -17,7 +17,6 @@ async def cart_keyboard(all_sap_category):
         InlineKeyboardButton(text="✅ Buyurtma berish", callback_data="order_now")
     )
 
-    # Birinchi mahsulotning `id` sini olish (agar mavjud bo'lsa)
     if all_sap_category:
         first_sap_category_id = all_sap_category[-1]['id']
         keyboard.add(InlineKeyboardButton(text="Ortga", callback_data=f"sap_category_{first_sap_category_id}"))

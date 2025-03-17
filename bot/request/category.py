@@ -1,4 +1,3 @@
-from django.db.models.expressions import result
 from sqlalchemy import select
 
 from bot.__main__ import session_maker

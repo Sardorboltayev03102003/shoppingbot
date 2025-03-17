@@ -1,12 +1,16 @@
 from aiogram import Router, F
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from geopy import Nominatim
 from sqlalchemy.ext.asyncio import AsyncSession
+
+import re
 
 from bot.db import Location
 from bot.keyboard import keyboard_location
 from bot.keyboard import check_location_kb
 from bot.keyboard.keyboards import main
+from bot.keyboard.location import address_kb
 from bot.request.user import get_user_id
 
 router = Router(name="callbacks-router")
@@ -46,8 +50,24 @@ async def location_receives(message: Message, session: AsyncSession):
                          parse_mode="HTML", reply_markup=check_location_kb)
 
 
+@router.message(F.text.in_(["🗺 Mening manzillarim","⬅️ Ortga"]))
+async def address_name(message: Message, session: AsyncSession):
+    if message.text=="🗺 Mening manzillarim":
+        telegram_id = message.from_user.id
+        user_id = await get_user_id(telegram_id, session)
+        from bot.request.location import get_location
+        address = await get_location(user_id)
+        address_btn = await address_kb(address)
+        await message.answer(text="quyidagi manzillaringizdan birini tanlang",reply_markup=address_btn)
+    elif message.text=="⬅️ Ortga":
+        await message.answer(text="quyidagilardan birini tanlang",reply_markup=keyboard_location)
+
+
+
+
+
 @router.message(F.text.in_(["HA", "YO'Q", "Ortga qaytish 🔙"]))
-async def check_location(message: Message, session: AsyncSession):
+async def check_location(message: Message, session: AsyncSession,state:FSMContext):
     telegram_id = message.from_user.id
     user_id = await get_user_id(telegram_id, session)
 
@@ -57,10 +77,18 @@ async def check_location(message: Message, session: AsyncSession):
             longitude = location_data[user_id]["longitude"]
             address = location_data[user_id]["address"]
 
-            new_location = Location(user_id=user_id, latitude=latitude, longitude=longitude, address=address)
+            address = re.sub(r'^[^,]+,', '', address).strip()
+            clean_address = re.sub(r'\b(Tumani|t\.|Shahar|sh\.|Ko‘cha|k\.|Oʻzbekiston|Uzbekistan|Davlat)\b', '',
+                                   address, flags=re.IGNORECASE).strip()
+
+            new_location = Location(user_id=user_id, latitude=latitude, longitude=longitude, address=clean_address)
             session.add(new_location)
             await session.commit()
             await session.close()
+            await session.refresh(new_location)
+            location_id = new_location.id
+
+            await state.update_data(location_id=location_id)
 
             del location_data[user_id]
             print("saqlandi")
@@ -73,3 +101,12 @@ async def check_location(message: Message, session: AsyncSession):
 
     elif message.text.strip() == "Ortga qaytish 🔙":
         await message.answer(text="bo'limlardan birini tanlang", reply_markup=main)
+
+@router.message(F.text == "/state_info")
+async def show_state_data(message: Message, state: FSMContext):
+    data = await state.get_data()  # State dagi barcha ma'lumotlarni olish
+    if not data:
+        await message.answer("ℹ️ State ichida ma'lumot yo'q.")
+    else:
+        info = "\n".join([f"{key}: {value}" for key, value in data.items()])
+        await message.answer(f"📋 State dagi ma'lumotlar:\n\n{info}")
